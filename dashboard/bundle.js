@@ -76,7 +76,7 @@
 	        var maxEvents = 30;
 	        var data = [];
 	        for (var i = maxEvents; i > 0; i--) {
-	            var date = new Date(new Date().setSeconds(i * -1));
+	            var date = new Date(new Date().setSeconds(i * 5 * -1));
 	            data.push({ key: this.props.name, value: 0, index: date, top: this.props.maxValue });
 	        }
 	        return {
@@ -88,18 +88,12 @@
 	    chartSeries: function chartSeries() {
 	        return [{
 	            field: "value",
-	            color: "#090",
-	            name: this.props.name,
-	            area: true,
-	            margins: { left: 0, right: 0, top: 10, bottom: 10 },
-	            style: { fillOpacity: .5 }
+	            color: "rgba(76, 175, 80, 0.9)",
+	            name: this.props.name
 	        }, {
 	            field: "top",
 	            color: "transparent",
-	            name: "Top value: " + this.props.maxValue,
-	            area: true,
-	            margins: { left: 0, right: 0, top: 10, bottom: 10 },
-	            style: { fillOpacity: .5 }
+	            name: "Top value: " + this.props.maxValue
 	        }];
 	    },
 	    componentDidMount: function componentDidMount() {
@@ -118,7 +112,7 @@
 	            this.setState({ data: data, className: "panel panel-default" });
 
 	            ReactDOM.render(React.createElement(AreaChart, {
-	                width: 500,
+	                width: 520,
 	                height: 200,
 	                xScale: "time",
 	                data: this.state.data,
@@ -145,6 +139,7 @@
 	            React.createElement('div', { className: 'panel-body', ref: function ref(_ref) {
 	                    return _this._el = _ref;
 	                }, style: { marginLeft: "-10%" } }),
+	            ' ',
 	            React.createElement(
 	                'div',
 	                { className: 'panel-footer' },
