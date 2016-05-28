@@ -96,12 +96,24 @@
 	            name: "Top value: " + this.props.maxValue
 	        }];
 	    },
+	    renderChart: function renderChart() {
+	        setTimeout(function () {
+	            ReactDOM.render(React.createElement(AreaChart, {
+	                width: 520,
+	                height: 200,
+	                xScale: "time",
+	                data: this.state.data,
+	                chartSeries: this.chartSeries(),
+	                x: function x(d) {
+	                    return d.index;
+	                }
+	            }), this._el);
+	        }.bind(this));
+	    },
 	    componentDidMount: function componentDidMount() {
 	        MessageManager.subscribe(this.props.topic, function (message) {
 	            var data = this.state.data || [];
-	            if (data.length >= this.state.maxEvents) {
-	                data.shift();
-	            }
+	            data.shift();
 	            data.push({
 	                top: this.props.maxValue,
 	                key: this.props.name,
@@ -110,19 +122,7 @@
 	            });
 
 	            this.setState({ data: data, className: "panel panel-default" });
-
-	            setTimeout(function () {
-	                ReactDOM.render(React.createElement(AreaChart, {
-	                    width: 520,
-	                    height: 200,
-	                    xScale: "time",
-	                    data: this.state.data,
-	                    chartSeries: this.chartSeries(),
-	                    x: function x(d) {
-	                        return d.index;
-	                    }
-	                }), this._el);
-	            }.bind(this));
+	            this.renderChart.call(this);
 	        }.bind(this));
 	    },
 	    render: function render() {
@@ -141,7 +141,6 @@
 	            React.createElement('div', { className: 'panel-body', ref: function ref(_ref) {
 	                    return _this._el = _ref;
 	                }, style: { marginLeft: "-10%" } }),
-	            ' ',
 	            React.createElement(
 	                'div',
 	                { className: 'panel-footer' },
