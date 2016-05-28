@@ -52,7 +52,22 @@
 	var LineChart = __webpack_require__(261).LineChart;
 	var AreaChart = __webpack_require__(261).AreaChart;
 
-	var subscriptions = {};
+	var MessageManager = {
+	    client: mqtt.connect('mqtt://broker.mqttdashboard.com:8000'),
+	    subscriptions: {},
+	    subscribe: function subscribe(subscriptionTopic, callback) {
+	        if (!this.subscriptions[subscriptionTopic]) {
+	            console.log("subscribe: " + subscriptionTopic);
+	            this.client.subscribe(subscriptionTopic);
+	            this.subscriptions[subscriptionTopic] = true;
+	        }
+	        this.client.on('message', function (topic, message) {
+	            if (subscriptionTopic == topic) {
+	                callback(message.toString());
+	            }
+	        });
+	    }
+	};
 
 	var LineChartBox = React.createClass({
 	    displayName: 'LineChartBox',
@@ -65,6 +80,7 @@
 	            data.push({ key: this.props.name, value: 0, index: date });
 	        }
 	        return {
+	            className: "panel panel-warning",
 	            maxEvents: maxEvents,
 	            data: data
 	        };
@@ -80,24 +96,18 @@
 	        }];
 	    },
 	    componentDidMount: function componentDidMount() {
-	        if (!subscriptions[this.props.topic]) {
-	            this.props.client.subscribe(this.props.topic);
-	            subscriptions[this.props.topic] = true;
-	        }
-	        this.props.client.on('message', function (topic, message) {
-	            if (topic != this.props.topic) return;
-
+	        MessageManager.subscribe(this.props.topic, function (message) {
 	            var data = this.state.data || [];
 	            if (data.length >= this.state.maxEvents) {
 	                data.shift();
 	            }
 	            data.push({
 	                key: this.props.name,
-	                value: parseInt(message.toString()),
+	                value: parseInt(message),
 	                index: new Date()
 	            });
 
-	            this.setState({ data: data });
+	            this.setState({ data: data, className: "panel panel-default" });
 
 	            ReactDOM.render(React.createElement(AreaChart, {
 	                width: 500,
@@ -114,26 +124,34 @@
 	    render: function render() {
 	        var _this = this;
 
+	        var lastEvent = this.state.data[this.state.data.length - 1];
 	        return React.createElement(
 	            'div',
-	            { className: 'pull-left col-xs-12 col-sm-8 col-md-6' },
+	            { className: this.state.className },
 	            React.createElement(
 	                'div',
-	                { className: 'list-group' },
+	                { className: 'panel-heading' },
+	                this.props.name,
+	                ' LineChart'
+	            ),
+	            React.createElement('div', { className: 'panel-body', ref: function ref(_ref) {
+	                    return _this._el = _ref;
+	                } }),
+	            React.createElement(
+	                'div',
+	                { className: 'panel-footer' },
+	                'Last value ',
 	                React.createElement(
-	                    'div',
-	                    { className: 'list-group-item active' },
-	                    React.createElement(
-	                        'h4',
-	                        { className: 'list-group-item-heading' },
-	                        'LineChart (',
-	                        this.props.name,
-	                        ')'
-	                    )
+	                    'b',
+	                    null,
+	                    lastEvent.value
 	                ),
-	                React.createElement('div', { className: 'list-group-item', ref: function ref(_ref) {
-	                        return _this._el = _ref;
-	                    } })
+	                ' at ',
+	                React.createElement(
+	                    'b',
+	                    null,
+	                    lastEvent.index.toString()
+	                )
 	            )
 	        );
 	    }
@@ -144,48 +162,29 @@
 
 	    getInitialState: function getInitialState() {
 	        return {
+	            className: "panel panel-warning",
 	            message: "--"
 	        };
 	    },
 	    componentDidMount: function componentDidMount() {
-	        if (!subscriptions[this.props.topic]) {
-	            this.props.client.subscribe(this.props.topic);
-	            subscriptions[this.props.topic] = true;
-	        }
-	        this.props.client.on('message', function (topic, message) {
-	            if (topic == this.props.topic) {
-	                this.setState({ message: message.toString() });
-	                //console.log("MessageBox (" + this.props.name + "):", message.toString());
-	            }
+	        MessageManager.subscribe(this.props.topic, function (message) {
+	            this.setState({ message: message, className: "panel panel-default" });
 	        }.bind(this));
 	    },
 	    render: function render() {
 	        return React.createElement(
 	            'div',
-	            { className: 'pull-left col-xs-12 col-sm-4 col-md-3' },
+	            { className: this.state.className },
 	            React.createElement(
 	                'div',
-	                { className: 'list-group' },
-	                React.createElement(
-	                    'div',
-	                    { className: 'list-group-item active' },
-	                    React.createElement(
-	                        'h4',
-	                        { className: 'list-group-item-heading' },
-	                        'Message (',
-	                        this.props.name,
-	                        ')'
-	                    )
-	                ),
-	                React.createElement(
-	                    'div',
-	                    { className: 'list-group-item ' },
-	                    React.createElement(
-	                        'p',
-	                        { className: 'list-group-item-text' },
-	                        this.state.message
-	                    )
-	                )
+	                { className: 'panel-heading' },
+	                this.props.name,
+	                ' Message'
+	            ),
+	            React.createElement(
+	                'div',
+	                { className: 'panel-body' },
+	                this.state.message
 	            )
 	        );
 	    }
@@ -195,7 +194,6 @@
 	    displayName: 'App',
 
 	    render: function render() {
-	        var client = mqtt.connect('mqtt://broker.mqttdashboard.com:8000');
 	        return React.createElement(
 	            'div',
 	            { className: 'container' },
@@ -204,11 +202,23 @@
 	                { style: { paddingLeft: "12px" } },
 	                'Dashboard'
 	            ),
-	            React.createElement(MessageBox, { client: client, name: 'Text', topic: 'mydome/text/value' }),
-	            React.createElement(LineChartBox, { client: client, name: 'Humidity', topic: 'mydome/humidity/value' }),
-	            React.createElement(MessageBox, { client: client, name: 'Temp', topic: 'mydome/temp/value' }),
-	            React.createElement(MessageBox, { client: client, name: 'Humidity', topic: 'mydome/humidity/value' }),
-	            React.createElement(MessageBox, { client: client, name: 'Gas', topic: 'mydome/gas/value' })
+	            React.createElement(
+	                'div',
+	                { className: 'pull-left col-xs-12 col-sm-4 col-md-4 col-lg-2' },
+	                React.createElement(MessageBox, { name: 'Text', topic: 'mydome/text/value' }),
+	                React.createElement(MessageBox, { name: 'Humidity', topic: 'mydome/humidity/value' }),
+	                React.createElement(MessageBox, { name: 'Gas', topic: 'mydome/gas/value' })
+	            ),
+	            React.createElement(
+	                'div',
+	                { className: 'pull-left col-xs-12 col-sm-8 col-md-8 col-lg-5' },
+	                React.createElement(LineChartBox, { name: 'Humidity', topic: 'mydome/humidity/value' })
+	            ),
+	            React.createElement(
+	                'div',
+	                { className: 'pull-left col-xs-12 col-sm-8 col-md-8 col-lg-5' },
+	                React.createElement(LineChartBox, { name: 'Temp', topic: 'mydome/temp/value' })
+	            )
 	        );
 	    }
 	});
