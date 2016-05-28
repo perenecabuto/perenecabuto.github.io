@@ -77,7 +77,7 @@
 	        var data = [];
 	        for (var i = maxEvents; i > 0; i--) {
 	            var date = new Date(new Date().setSeconds(i * -1));
-	            data.push({ key: this.props.name, value: 0, index: date });
+	            data.push({ key: this.props.name, value: 0, index: date, top: this.props.maxValue });
 	        }
 	        return {
 	            className: "panel panel-warning",
@@ -93,6 +93,13 @@
 	            area: true,
 	            margins: { left: 0, right: 0, top: 10, bottom: 10 },
 	            style: { fillOpacity: .5 }
+	        }, {
+	            field: "top",
+	            color: "transparent",
+	            name: "Top value: " + this.props.maxValue,
+	            area: true,
+	            margins: { left: 0, right: 0, top: 10, bottom: 10 },
+	            style: { fillOpacity: .5 }
 	        }];
 	    },
 	    componentDidMount: function componentDidMount() {
@@ -102,6 +109,7 @@
 	                data.shift();
 	            }
 	            data.push({
+	                top: this.props.maxValue,
 	                key: this.props.name,
 	                value: parseInt(message),
 	                index: new Date()
@@ -136,7 +144,7 @@
 	            ),
 	            React.createElement('div', { className: 'panel-body', ref: function ref(_ref) {
 	                    return _this._el = _ref;
-	                } }),
+	                }, style: { marginLeft: "-10%" } }),
 	            React.createElement(
 	                'div',
 	                { className: 'panel-footer' },
@@ -212,12 +220,12 @@
 	            React.createElement(
 	                'div',
 	                { className: 'pull-left col-xs-12 col-sm-8 col-md-8 col-lg-5' },
-	                React.createElement(LineChartBox, { name: 'Humidity', topic: 'mydome/humidity/value' })
+	                React.createElement(LineChartBox, { name: 'Humidity', maxValue: '100', topic: 'mydome/humidity/value' })
 	            ),
 	            React.createElement(
 	                'div',
 	                { className: 'pull-left col-xs-12 col-sm-8 col-md-8 col-lg-5' },
-	                React.createElement(LineChartBox, { name: 'Temp', topic: 'mydome/temp/value' })
+	                React.createElement(LineChartBox, { name: 'Temp', maxValue: '60', topic: 'mydome/temp/value' })
 	            )
 	        );
 	    }
