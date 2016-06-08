@@ -88,6 +88,171 @@
 	    };
 	}();
 
+	var ClassifierSintaxDescription = React.createClass({
+	    displayName: 'ClassifierSintaxDescription',
+
+	    render: function render() {
+	        var itemFormat = React.createElement(
+	            'code',
+	            null,
+	            React.createElement(
+	                'code',
+	                { style: { color: "blue" } },
+	                ":<label>\n"
+	            ),
+	            React.createElement(
+	                'code',
+	                { style: { color: "green" } },
+	                "<regex>\n"
+	            ),
+	            React.createElement(
+	                'code',
+	                { style: { color: "green" } },
+	                "<regex>\n"
+	            )
+	        );
+	        return React.createElement(
+	            'div',
+	            { className: 'list-group' },
+	            React.createElement(
+	                'div',
+	                { className: 'list-group-item active' },
+	                React.createElement(
+	                    'h2',
+	                    { className: 'list-group-item-heading' },
+	                    'Classifiers form syntax'
+	                )
+	            ),
+	            React.createElement(
+	                'div',
+	                { className: 'list-group-item' },
+	                React.createElement(
+	                    'div',
+	                    { className: 'list-group-item-text' },
+	                    'Here you place the classifier names followed by its criterias.',
+	                    React.createElement('br', null),
+	                    'Each line represents a ',
+	                    React.createElement(
+	                        'i',
+	                        { style: { color: 'blue' } },
+	                        ':classifierLabel '
+	                    ),
+	                    'or a ',
+	                    React.createElement(
+	                        'i',
+	                        { style: { color: "green" } },
+	                        'regex.*pattern'
+	                    ),
+	                    React.createElement('br', null),
+	                    'The :classifierLabel is a string that starts with ',
+	                    React.createElement(
+	                        'strong',
+	                        null,
+	                        ':'
+	                    ),
+	                    React.createElement('br', null),
+	                    'The above lines that not starts with : is a criteria',
+	                    React.createElement('br', null),
+	                    'A new line that starts with : is a new :classifierLabel, and the end of the previeous :classifierLabel',
+	                    React.createElement('br', null)
+	                )
+	            ),
+	            React.createElement(
+	                'div',
+	                { className: 'list-group-item col-lg-6 col-md-6 col-sm-6' },
+	                React.createElement(
+	                    'h2',
+	                    { className: 'list-group-item-heading' },
+	                    'Format'
+	                ),
+	                React.createElement(
+	                    'div',
+	                    { className: 'list-group-item-text' },
+	                    React.createElement(
+	                        'pre',
+	                        null,
+	                        itemFormat,
+	                        itemFormat,
+	                        itemFormat,
+	                        React.createElement(
+	                            'code',
+	                            { style: { color: "green" } },
+	                            "\n"
+	                        )
+	                    )
+	                )
+	            ),
+	            React.createElement(
+	                'div',
+	                { className: 'list-group-item col-lg-6 col-md-6 col-sm-6' },
+	                React.createElement(
+	                    'h2',
+	                    { className: 'list-group-item-heading' },
+	                    'Example'
+	                ),
+	                React.createElement(
+	                    'div',
+	                    { className: 'list-group-item-text' },
+	                    React.createElement(
+	                        'pre',
+	                        null,
+	                        React.createElement(
+	                            'code',
+	                            { style: { color: "blue" } },
+	                            ":Problems\n"
+	                        ),
+	                        React.createElement(
+	                            'code',
+	                            { style: { color: "green" } },
+	                            "no money\n"
+	                        ),
+	                        React.createElement(
+	                            'code',
+	                            { style: { color: "green" } },
+	                            "gospel\n"
+	                        ),
+	                        React.createElement(
+	                            'code',
+	                            { style: { color: "green" } },
+	                            "hate\n"
+	                        ),
+	                        React.createElement(
+	                            'code',
+	                            { style: { color: "blue" } },
+	                            ":Good News\n"
+	                        ),
+	                        React.createElement(
+	                            'code',
+	                            { style: { color: "green" } },
+	                            "money\n"
+	                        ),
+	                        React.createElement(
+	                            'code',
+	                            { style: { color: "green" } },
+	                            "radiohead\n"
+	                        ),
+	                        React.createElement(
+	                            'code',
+	                            { style: { color: "green" } },
+	                            "peace\n"
+	                        ),
+	                        React.createElement(
+	                            'code',
+	                            { style: { color: "blue" } },
+	                            ":Anything\n"
+	                        ),
+	                        React.createElement(
+	                            'code',
+	                            { style: { color: "green" } },
+	                            ".*\n"
+	                        )
+	                    )
+	                )
+	            )
+	        );
+	    }
+	});
+
 	var GossipForm = React.createClass({
 	    displayName: 'GossipForm',
 
@@ -182,6 +347,12 @@
 	            }.bind(this));
 	        }
 	    },
+	    showDescription: function showDescription() {
+	        this.setState({ classifierSyntaxDescriptionVisible: true });
+	    },
+	    hideDescription: function hideDescription() {
+	        this.setState({ classifierSyntaxDescriptionVisible: false });
+	    },
 	    render: function render() {
 	        var _this = this;
 
@@ -247,17 +418,29 @@
 	                        } })
 	                )
 	            ),
+	            React.createElement('br', null),
 	            React.createElement(
 	                'div',
 	                { className: 'form-group' },
+	                React.createElement(
+	                    Modal,
+	                    { isOpen: this.state.classifierSyntaxDescriptionVisible, onRequestClose: this.hideDescription },
+	                    React.createElement(
+	                        'button',
+	                        { onClick: this.hideDescription, className: 'pull-right close' },
+	                        'close ×'
+	                    ),
+	                    React.createElement('br', null),
+	                    React.createElement(ClassifierSintaxDescription, null)
+	                ),
 	                React.createElement(
 	                    'label',
 	                    null,
 	                    'Classifiers (',
 	                    React.createElement(
 	                        'a',
-	                        null,
-	                        'description'
+	                        { onClick: this.showDescription },
+	                        'see the syntax'
 	                    ),
 	                    ')'
 	                ),
@@ -494,7 +677,8 @@
 
 	    getInitialState: function getInitialState() {
 	        return {
-	            gossips: []
+	            gossips: [],
+	            showNewGossipForm: false
 	        };
 	    },
 	    componentDidMount: function componentDidMount() {
@@ -556,7 +740,7 @@
 	            ),
 	            React.createElement(
 	                Modal,
-	                { isOpen: this.state.showNewGossipForm },
+	                { isOpen: this.state.showNewGossipForm, onRequestClose: this.onCancelNewGossip },
 	                React.createElement(GossipForm, { onSave: this.onSaveNewGossip, onCancel: this.onCancelNewGossip })
 	            ),
 	            React.createElement(
