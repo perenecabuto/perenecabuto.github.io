@@ -159,7 +159,11 @@
 	            React.createElement(
 	                'div',
 	                { className: 'row' },
-	                React.createElement(MultLineChartBox, { gossip: this.props.gossip, fromDate: this.state.startDate, toDate: this.state.endDate })
+	                React.createElement(
+	                    'div',
+	                    { className: 'col-lg-12 col-md-12 col-sm-12 col-xs-12' },
+	                    React.createElement(MultLineChartBox, { gossip: this.props.gossip, fromDate: this.state.startDate, toDate: this.state.endDate })
+	                )
 	            )
 	        );
 	    }
@@ -342,9 +346,9 @@
 	        };
 	    },
 	    componentDidMount: function componentDidMount() {
-	        if (this.props.gossip) {
+	        if (this.state.gossip) {
 	            this.disableForm(true);
-	            ajar.get(location.protocol + "//" + serviceURL + "/gossip/" + this.props.gossip).then(function (gossip) {
+	            ajar.get(location.protocol + "//" + serviceURL + "/gossip/" + this.state.gossip).then(function (gossip) {
 	                this.setState({
 	                    gossip: gossip.gossip,
 	                    subjects: gossip.subjects.join(", "),
@@ -401,23 +405,22 @@
 	        };
 
 	        var response;
-	        if (this.props.gossip) {
+	        if (this.state.gossip) {
 	            response = ajar.put(location.protocol + "//" + serviceURL + "/gossip/" + this.props.gossip, payload);
 	        } else {
 	            response = ajar.post(location.protocol + "//" + serviceURL + "/gossip/", payload);
 	        }
-	        response.then(this.onSave.bind(this));
+	        response.then(this.onSave);
 	    },
 	    onSave: function onSave(data) {
 	        if (this.props.onSave) {
 	            this.props.onSave(data);
 	        }
-	        alert("gossip saved successfully");
 	    },
 	    onDelete: function onDelete() {
 	        var sure = confirm("Are you sure you want delete gossip " + this.props.gosip + "?");
 	        if (sure) {
-	            ajar.delete(location.protocol + "//" + serviceURL + "/gossip/" + this.props.gossip).then(function () {
+	            ajar.delete(location.protocol + "//" + serviceURL + "/gossip/" + this.state.gossip).then(function () {
 	                if (this.props.onDelete) {
 	                    this.props.onDelete();
 	                }
@@ -434,7 +437,7 @@
 	        var _this = this;
 
 	        var deleteButton;
-	        if (this.props.gossip) {
+	        if (this.state.gossip) {
 	            deleteButton = React.createElement(
 	                'button',
 	                { type: 'button', className: 'btn btn-danger', onClick: this.onDelete },
@@ -553,13 +556,16 @@
 
 	    getInitialState: function getInitialState() {
 	        return {
+	            gossip: this.props.gossip,
 	            maxItems: 20,
 	            data: []
 	        };
 	    },
 	    componentWillReceiveProps: function componentWillReceiveProps(props) {
 	        if (props.fromDate != this.props.fromDate) {
-	            this.loadInitialData(props.fromDate, props.toDate);
+	            this.loadInitialData(props.gossip, props.fromDate, props.toDate);
+	        } else if (props.gossip != this.props.gossip) {
+	            this.loadInitialData(props.gossip, null, null);
 	        }
 	    },
 	    getRandomColor: function getRandomColor() {
@@ -615,8 +621,9 @@
 
 	        fieldData.values.push(value);
 	    },
-	    loadInitialData: function loadInitialData(fromDate, toDate) {
-	        var url = location.protocol + "//" + serviceURL + "/gossip/" + this.props.gossip + "/history?";
+	    loadInitialData: function loadInitialData(gossip, fromDate, toDate) {
+	        gossip = gossip || this.state.gossip || this.props.gossip;
+	        var url = location.protocol + "//" + serviceURL + "/gossip/" + gossip + "/history?";
 	        fromDate = fromDate || this.props.fromDate;
 	        if (fromDate) {
 	            url += "&from=" + Math.round(fromDate.getTime() / 1000);
@@ -649,13 +656,14 @@
 	            this.state.data.push({ field: "top", key: "", color: "transparent", values: [] });
 	        }
 
-	        if (this.props.gossip) {
+	        var gossip = this.state.gossip;
+	        if (gossip) {
 	            this.loadInitialData();
 	        }
 
 	        if (this.props.realtime) {
 	            MessageManager.onMessage(function (message) {
-	                if (!this.isMounted() || message.gossip !== undefined && message.gossip !== this.props.gossip) {
+	                if (!this.isMounted() || message.gossip !== undefined && message.gossip !== gossip) {
 	                    return;
 	                }
 
@@ -671,7 +679,7 @@
 	        var _this2 = this;
 
 	        this.renderChart();
-	        return React.createElement('svg', { style: { minHeight: 'inherit', height: '100%', width: '100%' }, ref: function ref(_ref) {
+	        return React.createElement('svg', { style: { height: '100%', width: '100%' }, ref: function ref(_ref) {
 	                return _this2._el = _ref;
 	            } });
 	    }
@@ -696,35 +704,97 @@
 	        this.setState({ action: "realtime" });
 	    },
 	    stopWorker: function stopWorker() {
-	        ajar.get(location.protocol + "//" + serviceURL + "/gossip/" + this.props.gossip + "/stop").then(function (data) {
-	            alert("Worker state " + data.state);
-	        }.bind(this));
+	        var _this3 = this;
+
+	        var url = location.protocol + "//" + serviceURL + "/gossip/" + this.state.gossip + "/stop";
+	        ajar.get(url).then(function (data) {
+	            return _this3.updateData(data);
+	        });
 	    },
 	    startWorker: function startWorker() {
-	        ajar.get(location.protocol + "//" + serviceURL + "/gossip/" + this.props.gossip + "/start").then(function (data) {
-	            alert("Worker state " + data.state);
-	        }.bind(this));
+	        var _this4 = this;
+
+	        var url = location.protocol + "//" + serviceURL + "/gossip/" + this.state.gossip + "/start";
+	        ajar.get(url).then(function (data) {
+	            return _this4.updateData(data);
+	        });
 	    },
 	    onSave: function onSave(gossip) {
-	        this.setState({ gossip: gossip.gossip, action: false });
+	        this.setState({ action: "realtime" });
+	        this.updateData(gossip);
 	    },
 	    onCancel: function onCancel() {
-	        this.setState({ action: false });
+	        this.setState({ action: "realtime" });
 	    },
 	    onDelete: function onDelete() {
 	        this.setState({ deleted: true });
+	    },
+	    updateData: function updateData(gossip) {
+	        this.setState({
+	            gossip: gossip.gossip,
+	            interval: gossip.interval,
+	            workerStatus: gossip.state,
+	            classifiers: Object.keys(gossip.classifiers)
+	        });
+	    },
+	    componentDidMount: function componentDidMount() {
+	        var _this5 = this;
+
+	        ajar.get(location.protocol + "//" + serviceURL + "/gossip/" + this.state.gossip).then(function (gossip) {
+	            return _this5.updateData(gossip);
+	        });
 	    },
 	    render: function render() {
 	        var template;
 	        switch (this.state.action) {
 	            case "edit":
-	                template = React.createElement(GossipForm, { gossip: this.props.gossip, onSave: this.onSave, onCancel: this.onCancel, onDelete: this.onDelete });
+	                template = React.createElement(GossipForm, { gossip: this.state.gossip, onSave: this.onSave, onCancel: this.onCancel, onDelete: this.onDelete });
 	                break;
 	            case "realtime":
-	                template = React.createElement(MultLineChartBox, { gossip: this.props.gossip, realtime: true });
+	                template = React.createElement(
+	                    'div',
+	                    { className: 'row' },
+	                    React.createElement(
+	                        'div',
+	                        { className: 'col-lg-6 col-md-6 col-sm-6 col-xs-6', style: { minHeight: '34px' } },
+	                        React.createElement(
+	                            'label',
+	                            null,
+	                            'Worker status:'
+	                        ),
+	                        ' ',
+	                        React.createElement(
+	                            'span',
+	                            null,
+	                            this.state.workerStatus
+	                        )
+	                    ),
+	                    React.createElement(
+	                        'div',
+	                        { className: 'col-lg-6 col-md-6 col-sm-6 col-xs-6' },
+	                        React.createElement(
+	                            'label',
+	                            null,
+	                            'Interval:'
+	                        ),
+	                        ' ',
+	                        React.createElement(
+	                            'span',
+	                            null,
+	                            this.state.interval,
+	                            's'
+	                        )
+	                    ),
+	                    React.createElement(
+	                        'div',
+	                        { className: 'col-lg-12 col-md-12 col-sm-12 col-xs-12' },
+	                        React.createElement('hr', null),
+	                        React.createElement(MultLineChartBox, { gossip: this.state.gossip, realtime: true })
+	                    )
+	                );
 	                break;
 	            case "history":
-	                template = React.createElement(HistoryChart, { gossip: this.props.gossip });
+	                template = React.createElement(HistoryChart, { gossip: this.state.gossip });
 	                break;
 	        }
 	        return React.createElement(
@@ -793,10 +863,10 @@
 	    },
 	    componentDidMount: function componentDidMount() {
 	        ajar.get(location.protocol + "//" + serviceURL + "/gossip/").then(function (data) {
-	            var _this3 = this;
+	            var _this6 = this;
 
 	            data.gossips.reverse().map(function (g) {
-	                return _this3.addGossip(g.gossip);
+	                return _this6.addGossip(g.gossip);
 	            });
 	            this.setState({});
 	        }.bind(this));
@@ -824,10 +894,9 @@
 	        this.setState({ showNewGossipForm: false });
 	        this.state.gossips.unshift(gossip.gossip);
 	        this.setState({});
-	        ajar.get(location.protocol + "//" + serviceURL + "/gossip/" + this.props.gossip + "/start");
 	    },
 	    render: function render() {
-	        var _this4 = this;
+	        var _this7 = this;
 
 	        return React.createElement(
 	            'div',
@@ -856,7 +925,7 @@
 	            React.createElement(
 	                'div',
 	                { className: 'row', ref: function ref(_ref2) {
-	                        return _this4._el = _ref2;
+	                        return _this7._el = _ref2;
 	                    } },
 	                this.state.gossips.map(function (gossip) {
 	                    return React.createElement(GossipPanel, { key: gossip, gossip: gossip });
