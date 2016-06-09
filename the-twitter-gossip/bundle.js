@@ -88,6 +88,83 @@
 	    };
 	}();
 
+	var HistoryChart = React.createClass({
+	    displayName: 'HistoryChart',
+
+	    getInitialState: function getInitialState() {
+	        return {
+	            fromDateInHours: 0,
+	            startDate: 0,
+	            endDate: 0,
+	            formattedStartDate: 'now',
+	            formattedEndDate: 'now'
+	        };
+	    },
+	    componentDidMount: function componentDidMount() {
+	        var now = new Date();
+	        this.setState({
+	            startDate: now,
+	            endDate: now
+	        });
+	    },
+	    handleStartDate: function handleStartDate(e) {
+	        var timeUnit = "hours";
+	        var formattedStartDate = Math.abs(e.target.value) + " " + timeUnit + " ago";
+	        this.setState({ fromDateInHours: e.target.value, formattedStartDate: formattedStartDate });
+	    },
+	    getHistory: function getHistory() {
+	        var endDate = new Date();
+	        var startDate = new Date();
+	        var hours = this.state.fromDateInHours;
+	        var hoursInterval = 10;
+	        endDate.setTime(endDate.getTime() + hours * 60 * 60 * 1000);
+	        startDate.setTime(endDate.getTime() - hoursInterval * 60 * 60 * 1000);
+	        this.setState({ endDate: endDate, startDate: startDate });
+	    },
+	    render: function render() {
+	        return React.createElement(
+	            'div',
+	            null,
+	            React.createElement(
+	                'div',
+	                { className: 'row' },
+	                React.createElement(
+	                    'div',
+	                    { className: 'col-lg-4 col-md-4 col-sm-4 col-xs-4' },
+	                    React.createElement(
+	                        'label',
+	                        null,
+	                        'from:'
+	                    ),
+	                    ' ',
+	                    React.createElement(
+	                        'span',
+	                        null,
+	                        this.state.formattedStartDate
+	                    ),
+	                    React.createElement('input', { type: 'range', onChange: this.handleStartDate, min: "-10", max: "0", value: this.state.fromDateInHours })
+	                ),
+	                React.createElement(
+	                    'div',
+	                    { className: 'col-lg-3 col-md-3 col-sm-3 col-xs-3' },
+	                    React.createElement(
+	                        'button',
+	                        { type: 'button', className: 'btn btn-link', onClick: this.getHistory },
+	                        React.createElement('span', { className: 'glyphicon glyphicon-search', 'aria-hidden': 'true' }),
+	                        ' search'
+	                    )
+	                )
+	            ),
+	            React.createElement('hr', null),
+	            React.createElement(
+	                'div',
+	                { className: 'row' },
+	                React.createElement(MultLineChartBox, { gossip: this.props.gossip, fromDate: this.state.startDate, toDate: this.state.endDate })
+	            )
+	        );
+	    }
+	});
+
 	var ClassifierSintaxDescription = React.createClass({
 	    displayName: 'ClassifierSintaxDescription',
 
@@ -396,10 +473,11 @@
 	                        'Subjects'
 	                    ),
 	                    React.createElement('br', null),
-	                    React.createElement('input', { className: 'form-control', value: this.state.subjects, placeholder: 'comma separated',
+	                    React.createElement('input', { className: 'form-control', value: this.state.subjects,
 	                        onChange: function onChange(e) {
 	                            return _this.setState({ 'subjects': e.target.value });
-	                        } })
+	                        },
+	                        placeholder: 'comma separated' })
 	                ),
 	                React.createElement(
 	                    'div',
@@ -412,7 +490,8 @@
 	                        's)'
 	                    ),
 	                    React.createElement('br', null),
-	                    React.createElement('input', { type: 'range', className: 'form-control', value: this.state.interval,
+	                    React.createElement('input', { type: 'range', className: 'form-control',
+	                        value: this.state.interval,
 	                        onChange: function onChange(e) {
 	                            return _this.setState({ 'interval': e.target.value });
 	                        } })
@@ -478,6 +557,11 @@
 	            data: []
 	        };
 	    },
+	    componentWillReceiveProps: function componentWillReceiveProps(props) {
+	        if (props.fromDate != this.props.fromDate) {
+	            this.loadInitialData(props.fromDate, props.toDate);
+	        }
+	    },
 	    getRandomColor: function getRandomColor() {
 	        this.colorCount = this.colorCount || 0;
 	        var colors = ['#3B7A57', '#00C4B0', '#FFBF00', '#FF7E00', '#FF033E', '#9966CC', '#A4C639'];
@@ -531,8 +615,17 @@
 
 	        fieldData.values.push(value);
 	    },
-	    loadInitialData: function loadInitialData() {
-	        ajar.get(location.protocol + "//" + serviceURL + "/gossip/" + this.props.gossip + "/history").then(function (data) {
+	    loadInitialData: function loadInitialData(fromDate, toDate) {
+	        var url = location.protocol + "//" + serviceURL + "/gossip/" + this.props.gossip + "/history?";
+	        fromDate = fromDate || this.props.fromDate;
+	        if (fromDate) {
+	            url += "&from=" + Math.round(fromDate.getTime() / 1000);
+	        }
+	        toDate = toDate || this.props.toDate;
+	        if (toDate) {
+	            url += "&to=" + Math.round(toDate.getTime() / 1000);
+	        }
+	        ajar.get(url).then(function (data) {
 	            var history = data.history;
 	            if (history === undefined || history.length == 0) {
 	                return;
@@ -560,21 +653,19 @@
 	            this.loadInitialData();
 	        }
 
-	        MessageManager.onMessage(function (message) {
-	            if (!this.isMounted() || message.gossip !== undefined && message.gossip !== this.props.gossip) {
-	                return;
-	            }
+	        if (this.props.realtime) {
+	            MessageManager.onMessage(function (message) {
+	                if (!this.isMounted() || message.gossip !== undefined && message.gossip !== this.props.gossip) {
+	                    return;
+	                }
 
-	            if (this.props.topValue) {
-	                this.addFieldValue("top", this.props.topValue);
-	            }
+	                for (var key in message.events) {
+	                    this.addFieldValue(key, { x: new Date().getTime(), y: message.events[key] });
+	                }
 
-	            for (var key in message.events) {
-	                this.addFieldValue(key, { x: new Date().getTime(), y: message.events[key] });
-	            }
-
-	            this.chart.update();
-	        }.bind(this));
+	                this.chart.update();
+	            }.bind(this));
+	        }
 	    },
 	    render: function render() {
 	        var _this2 = this;
@@ -592,11 +683,17 @@
 	    getInitialState: function getInitialState() {
 	        return {
 	            gossip: this.props.gossip,
-	            edit: this.props.gossip === undefined
+	            action: "realtime"
 	        };
 	    },
-	    toggleTemplate: function toggleTemplate() {
-	        this.setState({ edit: !this.state.edit });
+	    showForm: function showForm() {
+	        this.setState({ action: "edit" });
+	    },
+	    showHistory: function showHistory() {
+	        this.setState({ action: "history" });
+	    },
+	    showRealtime: function showRealtime() {
+	        this.setState({ action: "realtime" });
 	    },
 	    stopWorker: function stopWorker() {
 	        ajar.get(location.protocol + "//" + serviceURL + "/gossip/" + this.props.gossip + "/stop").then(function (data) {
@@ -609,23 +706,26 @@
 	        }.bind(this));
 	    },
 	    onSave: function onSave(gossip) {
-	        this.setState({ gossip: gossip.gossip, edit: false });
+	        this.setState({ gossip: gossip.gossip, action: false });
 	    },
 	    onCancel: function onCancel() {
-	        this.setState({ edit: false });
+	        this.setState({ action: false });
 	    },
 	    onDelete: function onDelete() {
 	        this.setState({ deleted: true });
 	    },
 	    render: function render() {
 	        var template;
-	        var actionLabel;
-	        if (this.state.edit) {
-	            actionLabel = "Back";
-	            template = React.createElement(GossipForm, { gossip: this.props.gossip, onSave: this.onSave, onCancel: this.onCancel, onDelete: this.onDelete });
-	        } else {
-	            actionLabel = "Edit";
-	            template = React.createElement(MultLineChartBox, { gossip: this.props.gossip });
+	        switch (this.state.action) {
+	            case "edit":
+	                template = React.createElement(GossipForm, { gossip: this.props.gossip, onSave: this.onSave, onCancel: this.onCancel, onDelete: this.onDelete });
+	                break;
+	            case "realtime":
+	                template = React.createElement(MultLineChartBox, { gossip: this.props.gossip, realtime: true });
+	                break;
+	            case "history":
+	                template = React.createElement(HistoryChart, { gossip: this.props.gossip });
+	                break;
 	        }
 	        return React.createElement(
 	            'div',
@@ -657,8 +757,18 @@
 	                        ),
 	                        React.createElement(
 	                            'button',
-	                            { type: 'button', className: 'btn btn-sm btn-default', onClick: this.toggleTemplate },
-	                            actionLabel
+	                            { type: 'button', className: 'btn btn-sm btn-default', onClick: this.showForm },
+	                            'Edit'
+	                        ),
+	                        React.createElement(
+	                            'button',
+	                            { type: 'button', className: 'btn btn-sm btn-default', onClick: this.showHistory },
+	                            'History'
+	                        ),
+	                        React.createElement(
+	                            'button',
+	                            { type: 'button', className: 'btn btn-sm btn-default', onClick: this.showRealtime },
+	                            'Realtime'
 	                        )
 	                    )
 	                ),
